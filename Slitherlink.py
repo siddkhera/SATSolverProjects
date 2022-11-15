@@ -25,35 +25,21 @@ cnf=[]
 
 for i in list(range(rows+1)):
     for j in list(range(cols+1)):
-        if(i<rows and j<cols and squares[i][j]!='.'):
-            cnf=cnf+nTrue(aroundSquare(i,j),int(squares[i][j]))
-        if(j<cols):
-            for k in nTrue(linesAround(i,j,True,True),1):
-                cnf+=[k+[-LineID(i,j,True)]]
-            for k in nTrue(linesAround(i,j,True,False),1):
-                cnf+=[k+[-LineID(i,j,True)]]
-        if(i<rows):
-            for k in nTrue(linesAround(i,j,False,True),1):
-                cnf+=[k+[-LineID(i,j,False)]]
-            for k in nTrue(linesAround(i,j,False,False),1):
-                cnf+=[k+[-LineID(i,j,False)]]
+        cnf+=nTrue(aroundSquare(i,j),int(squares[i][j])) if (i<rows and j<cols and squares[i][j]!='.') else []
+        for hori in [True,False]:
+            for t in [True,False]:
+                cnf+=[k+[-LineID(i,j,hori)] for k in nTrue(linesAround(i,j,hori,t),1)] if ((not hori or j<cols) and (hori or i<rows)) else []
 
-def IDtoCoord(num):
-    if num>(rows+1)*cols:
-        num-=1+(rows+1)*cols
-        return linesAround(num//(cols+1),num%(cols+1),False,True)+linesAround(num//(cols+1),num%(cols+1),False,False)
-    else:
-        num-=1
-        return linesAround(num//(cols),num%(cols),True,True)+linesAround(num//(cols),num%(cols),True,False)
+def IdLinesAround(num):
+        return linesAround((num-((rows+1)*cols+1))//(cols+1),(num-((rows+1)*cols+1))%(cols+1),False,True)+linesAround((num-((rows+1)*cols+1))//(cols+1),(num-((rows+1)*cols+1))%(cols+1),False,False) if num>(rows+1)*cols else linesAround((num-1)//(cols),(num-1)%(cols),True,True)+linesAround((num-1)//(cols),(num-1)%(cols),True,False)
 
-def ExtraLoops(TrueLines,LinesNotTravelled):
+def OneLoop(TrueLines,LinesNotTravelled):
     while(LinesNotTravelled!=[]):
         TrueLines.remove(LinesNotTravelled[0])
-        LinesNotTravelled=[i for i in IDtoCoord(LinesNotTravelled[0]) if (i in TrueLines)]
-    return TrueLines
+        LinesNotTravelled=[i for i in IdLinesAround(LinesNotTravelled[0]) if (i in TrueLines)]
+    return (TrueLines==[])
 
 for sol in pycosat.itersolve(cnf):
     TrueLines=[i for i in sol if i>0]
-    LoopsRemaining=ExtraLoops(TrueLines,[TrueLines[0]])
-    if LoopsRemaining==[]:
+    if OneLoop(TrueLines,[TrueLines[0]]):
         print(sol)
